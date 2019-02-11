@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        #myCanvas{
+            position: absolute;
+            top: calc((100% - 800px)/2);
+            left: calc((100% - 800px)/2);
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        class Snake{
+            constructor(options){
+                this.init(options)
+            }
+
+            init({w=20,color="red",time=250,x=400,y=400}={w:20,color:"red",time:250,x:400,y:400}){
+                this.w=w
+                this.speed=w
+                this.color=color
+                this.time=time
+                this.body=[{x,y},{x:x-w,y}]
+                this.food={}
+                this.dir="R"
+                this.width=800
+                this.pix=this.width/w
+
+                this.createDom()
+                this.bindEvent()
+                this.addFood()
+                this.running()
+            }
+
+            createDom(){
+                var canvas=document.createElement("canvas"),
+                    head=this.getHead(),
+                    w=this.w
+
+                canvas.id="myCanvas"
+                canvas.width=this.width
+                canvas.height=this.width
+                
+                this.canvas=canvas
+                this.ctx=canvas.getContext("2d")
+                this.ctx.fillStyle=this.color
+
+                this.body.forEach(item=>{
+                    this.ctx.fillRect(item.x,item.y,w,w)
+                })
+
+                document.body.appendChild(canvas)
+            }
+
+            bindEvent(){
+                document.addEventListener("keydown",e=>{
+                    var key=e.which,
+                        dir=this.getDir(key)
+
+                    if(this.noRun(dir)){
+                        return
+                    }
+                    
+                    this.dir=dir
+                    this.moveStep()
+                })
+            }
+
+            getDir(key){
+                var direct={
+                    37:"L",
+                    38:"T",
+                    39:"R",
+                    40:"B"
+                }
+
+                return direct[key]
+            }
+
+            noRun(dir){
+                var myDir=this.dir,
+                    flag=!dir||
+                    dir=="R"&&myDir=="L"||
+                    dir=="L"&&myDir=="R"||
+                    dir=="T"&&myDir=="B"||
+                    dir=="B"&&myDir=="T"
+
+                return flag
+            }
+
+            moveStep(tail){
+                var head=this.getHead(),
+                    w=this.w,
+                    {...newHead}=head
+
+                this.toHead(newHead)
+                this.setHead(newHead)
+                this.ctx.fillRect(newHead.x,newHead.y,w,w)
+
+                //吃检测
+                if(newHead.x==this.food.x&&newHead.y==this.food.y){
+                    this.addFood()
+                }else{
+                    var tail=this.getTail()
+                    this.ctx.clearRect(tail.x,tail.y,w,w)
+                }
+
+                //碰撞检测
+                if(this.isDead()){
+                    clearInterval(this.timer)
+                    this.ctx.textAlign = 'center';
+
+                    this.ctx.font="Bold 50px sans-serif"
+                    this.ctx.fillText("你输了",400,400)
+                    return 
+                }
+            }
+
+            toHead(tail){
+                var speed=this.speed,
+                    moveStep={
+                        T(tail){
+                            tail.y-=speed
+                        },
+                        R(tail){
+                            tail.x+=speed
+                        }, 
+                        B(tail){
+                            tail.y+=speed
+                        },
+                        L(tail){
+                            tail.x-=speed
+                        },
+                    }
+
+                moveStep[this.dir](tail)
+            }
+
+            getHead(){
+                return this.body[0]
+            }
+
+            setHead(head){
+                this.body.unshift(head)
+            }
+
+            getTail(){
+                return this.body.pop()
+            }
+
+            running(){
+                clearInterval(this.timer)
+                this.timer=setInterval(()=>{
+                    this.moveStep()
+                },this.time)
+            }
+
+            addFood(){
+                var w=this.w,
+                    width=this.width,
+                    pix=this.pix,
+                    body=this.body,
+                    food=this.food,
+                    x,y
+                do{
+                    x=(Math.random()*pix|0)*w
+                    y=(Math.random()*pix|0)*w
+                }while(body.find(item=>{
+                    if(item.x==x||item.y==y){
+                        return true
+                    }
+                }))
+
+                this.ctx.fillStyle="yellow"
+                this.ctx.fillRect(x,y,w,w)
+                this.ctx.fillStyle=this.color
+                this.food={x,y}
+            }
+
+            isDead(){
+                var head=this.getHead(),
+                    x=head.x,
+                    y=head.y,
+                    body=this.body
+
+                if(x<0||x>=800||y<0||y>=800){
+                    return true
+                }
+                
+                for(var i=4,len=body.length;i<len;i++){
+                    if(body[i].x==x&&body[i].y==y){
+                        return true
+                    }
+                }
+            }
+        }
+
+        new Snake({
+            w:40
+        })
+    </script>
+</body>
+
+</html>
